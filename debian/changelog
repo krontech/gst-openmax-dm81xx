@@ -1,0 +1,5 @@
+gst-openmax-dm81xx (0.7.0-1) unstable; urgency=medium
+
+  * Initial release.
+
+ -- Owen Kirby <oskirby@gmail.com>  Tue, 11 Dec 2018 17:18:28 -0800

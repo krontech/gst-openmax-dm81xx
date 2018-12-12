@@ -1,0 +1,32 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# debian package version
+version=$(shell dpkg-parsechangelog | grep ^Version: | cut -d ' ' -f 2)
+# upstream version
+gst_version=$(shell echo $(version) | cut -d '-' -f 1)
+gst_major=0
+gst_minor=10
+gst_abi=$(gst_major).$(gst_minor)
+
+gst_deb_abi=$(gst_abi)-0
+
+override_dh_auto_configure:
+	./autogen.sh
+	dh_auto_configure -- --disable-silent-rules --disable-builtin-libvpx \
+		--enable-gtk-doc --with-html-dir=\$${prefix}/share/doc/$(gst_pkgname)
+
+override_dh_install:
+	# purge .la files
+	find $(CURDIR)/debian/tmp -name "*.la" -type f -exec rm -f "{}" \;
+	# purge static libs
+	find $(CURDIR)/debian/tmp -name "*.a" -type f -exec rm -f "{}" \;
+	dh_install --fail-missing
+
+override_dh_installchangelogs:
+	dh_installchangelogs NEWS
+
+%:
+	dh $@ --with autoreconf --builddirectory=build/
