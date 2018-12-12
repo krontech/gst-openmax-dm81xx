@@ -3,6 +3,7 @@ Section: libs
 Priority: optional
 Maintainer: Owen Kirby <oskirby@gmail.com>
 Build-Depends: debhelper (>= 9),
+ dh-autoreconf,
  libgstreamer-plugins-base0.10-dev (>= 0.10.36),
  libgstreamer0.10-dev (>= 0.10.36),
  libtiomx-dev
@@ -11,7 +12,7 @@ Package: gstreamer0.10-openmax-dm81xx
 Architecture: armel
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
-Depends: ${misc:Depends}, ${shlib:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: GStreamer OpenMAX Plugins (dm81xx)
  GStreamer OpenMAX is a GStreamer plug-in that allows communication with
  OpenMAX IL components for the TI Davinci DM81xx family of multimedia

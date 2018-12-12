@@ -13,17 +13,13 @@ gst_abi=$(gst_major).$(gst_minor)
 
 gst_deb_abi=$(gst_abi)-0
 
+override_dh_autoreconf:
+	mkdir -p m4/
+	dh_autoreconf
+
 override_dh_auto_configure:
-	./autogen.sh
 	dh_auto_configure -- --disable-silent-rules --disable-builtin-libvpx \
 		--enable-gtk-doc --with-html-dir=\$${prefix}/share/doc/$(gst_pkgname)
-
-override_dh_install:
-	# purge .la files
-	find $(CURDIR)/debian/tmp -name "*.la" -type f -exec rm -f "{}" \;
-	# purge static libs
-	find $(CURDIR)/debian/tmp -name "*.a" -type f -exec rm -f "{}" \;
-	dh_install --fail-missing
 
 override_dh_installchangelogs:
 	dh_installchangelogs NEWS

@@ -43,6 +43,9 @@ AG_GST_ARG_WITH_PACKAGE_ORIGIN
 
 dnl ** checks **
 
+dnl Check for OMX
+PKG_CHECK_MODULES([OMX], [libtiomx])
+
 dnl Check for GLib
 PKG_CHECK_MODULES([GTHREAD], [gthread-2.0])
 
@@ -96,6 +99,22 @@ dnl this really should only contain flags, not libs - they get added before
 dnl whatevertarget_LIBS and -L flags here affect the rest of the linking
 GST_PLUGIN_LDFLAGS="-module -avoid-version -export-symbols-regex '^[_]*gst_plugin_desc\$\$' $GST_ALL_LDFLAGS"
 AC_SUBST(GST_PLUGIN_LDFLAGS)
+
+
+dnl Check for the GStreamer plugins directory
+AC_ARG_VAR([GST_PLUGIN_PATH], [installation path for the gstreamer-openmax plugin elements for GStreamer 0.10])
+AC_MSG_CHECKING([for GStreamer plugins directory])
+if test -d "$GST_PLUGIN_PATH"; then
+	GST_PLUGINS_DIR="$GST_PLUGIN_PATH"
+else
+	GST_PLUGINS_DIR=`$PKG_CONFIG gstreamer-0.10 --variable pluginsdir`
+	if test -z "$GST_PLUGINS_DIR"; then
+		GST_PLUGINS_DIR="\$(libdir)/gstreamer-$GST_PKG_VERSION"
+	fi
+fi
+AC_MSG_RESULT([$GST_PLUGINS_DIR])
+plugindir="$GST_PLUGINS_DIR"
+AC_SUBST(plugindir)
 
 SHAVE_INIT
 AC_CONFIG_FILES([shave shave-libtool])
