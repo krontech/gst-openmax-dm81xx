@@ -94,7 +94,7 @@ g_ptr_array_clear (GPtrArray *array)
 }
 
 static void
-g_ptr_array_insert (GPtrArray *array,
+g_ptr_array_extend_insert (GPtrArray *array,
                     guint index,
                     gpointer data)
 {
@@ -411,7 +411,7 @@ g_omx_core_get_port (GOmxCore *core, const gchar *name, guint index)
     if (!port)
     {
         port = g_omx_port_new (core, name, index);
-        g_ptr_array_insert (core->ports, index, port);
+        g_ptr_array_extend_insert (core->ports, index, port);
     }
 
     return port;

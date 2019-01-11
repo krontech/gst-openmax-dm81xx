@@ -22,7 +22,7 @@ override_dh_auto_configure:
 		--enable-gtk-doc --with-html-dir=\$${prefix}/share/doc/$(gst_pkgname)
 
 override_dh_installchangelogs:
-	dh_installchangelogs NEWS
+	dh_installchangelogs ChangeLog OMX_GST_ReleaseNotes.pdf
 
 %:
-	dh $@ --with autoreconf --builddirectory=build/
+	dh $@ --with autoreconf
