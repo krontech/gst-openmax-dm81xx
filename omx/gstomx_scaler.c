@@ -69,30 +69,51 @@ create_src_caps (GstOmxBaseFilter *omx_base)
 {
     GstCaps *caps;    
     GstOmxBaseVfpc *self;
-    int width, height;
+    gint width = 0;
+    gint height = 0;
+    gint par_num = 0;
+    gint par_denom = 0;
     GstStructure *struc;
 
     self = GST_OMX_BASE_VFPC (omx_base);
     caps = gst_pad_peer_get_caps (omx_base->srcpad);
 
-    if (NULL == caps || gst_caps_is_empty (caps))
-    {
-        width = self->in_width;
-        height = self->in_height;
-    }
-    else
+    if (NULL != caps && ! gst_caps_is_empty (caps))
     {
         GstStructure *s;
 
         s = gst_caps_get_structure (caps, 0);
+        gst_structure_get_int (s, "width", &width);
+        gst_structure_get_int (s, "height", &height);
+        gst_structure_get_fraction (s, "pixel-aspect-ratio", &par_num, &par_denom);
+    }
 
-        if (!(gst_structure_get_int (s, "width", &width) &&
-            gst_structure_get_int (s, "height", &height)))
+    /* Set default values */
+    if( !width && !height )
+    {
+        width = self->in_width;
+        height = self->in_height;
+    }
+    else if( !( width && height ) )
+    {
+        gint ratio_num = 1;
+        gint ratio_denom = 1;
+        
+        if( par_denom && self->pixel_aspect_ratio_denom ) {
+            ratio_num = par_num * self->pixel_aspect_ratio_denom;
+            ratio_denom = par_denom * self->pixel_aspect_ratio_num;
+        }
+        
+        if( !width && height )
         {
-            width = self->in_width;
-            height = self->in_height;    
+            width = height * self->in_width * ratio_num / self->in_height / ratio_denom;
+        }
+        else if( !height && width )
+        {
+            height = width * self->in_height * ratio_denom / self->in_width / ratio_num;
         }
     }
+
 	/* Workaround: Make width multiple of 16, otherwise, scaler crashes */
 	width = (width+15) & 0xFFFFFFF0;
 
@@ -110,7 +131,11 @@ create_src_caps (GstOmxBaseFilter *omx_base)
         "framerate", GST_TYPE_FRACTION, self->framerate_num, self->framerate_denom, NULL);
     }
 
-	if (self->pixel_aspect_ratio_denom)
+	if (par_denom)
+	{
+		gst_structure_set (struc, "pixel-aspect-ratio", GST_TYPE_FRACTION, par_num, par_denom, NULL);
+	}
+	else if (self->pixel_aspect_ratio_denom)
 	{
 		gst_structure_set (struc,
 				"pixel-aspect-ratio", GST_TYPE_FRACTION, self->pixel_aspect_ratio_num, 
@@ -124,6 +149,72 @@ create_src_caps (GstOmxBaseFilter *omx_base)
     gst_caps_append_structure (caps, struc);
 
     return caps;
+}
+
+static gboolean omx_parse_crop_params (GstOmxBaseVfpc *self)
+{
+    /* Check if the crop-area parameter has been set */
+    if((GST_OMX_SCALER(self))->crop_area != NULL){
+      char* crop_param;
+      gboolean error = FALSE;
+      gchar omx_crop_area[20];
+
+      strcpy(omx_crop_area, (GST_OMX_SCALER(self))->crop_area);
+
+      /* Searching for startX param */
+      crop_param = strtok(omx_crop_area,",");
+      if(crop_param == NULL){
+	error = TRUE;
+      } else {
+	(GST_OMX_SCALER(self))->startX = atoi(crop_param);
+      }
+
+      /* Searching for startY param */
+      crop_param = strtok(NULL,"@");
+      if(crop_param == NULL){
+	error = TRUE;
+      } else {
+	(GST_OMX_SCALER(self))->startY = atoi(crop_param);
+      }
+
+      /* Searching for cropWidth param */
+      crop_param = strtok(NULL,"X");
+      if(crop_param == NULL){
+	error = TRUE;
+      } else {
+	(GST_OMX_SCALER(self))->cropWidth = atoi(crop_param);
+      }
+
+      /* Searching for cropHeight param */
+      crop_param = strtok(NULL,"");
+      if(crop_param == NULL){
+	error = TRUE;
+      } else {
+	(GST_OMX_SCALER(self))->cropHeight = atoi(crop_param);
+      }
+
+      GST_DEBUG_OBJECT(self,"Setting crop area to: (%d,%d)@%dx%d\n",
+		       (GST_OMX_SCALER(self))->startX, (GST_OMX_SCALER(self))->startY,
+		       (GST_OMX_SCALER(self))->cropWidth, (GST_OMX_SCALER(self))->cropHeight);
+
+      if(error){
+	GST_WARNING_OBJECT (self, "Cropping area is not valid. Format must be "
+	     "<startX>,<startY>@<cropWidth>x<cropHeight>. Setting crop area to default values.");
+	(GST_OMX_SCALER(self))->startX = 0;
+	(GST_OMX_SCALER(self))->startY = 0;
+	(GST_OMX_SCALER(self))->cropWidth = 0;
+	(GST_OMX_SCALER(self))->cropHeight = 0;
+      }
+
+      return FALSE;
+    } else {
+      (GST_OMX_SCALER(self))->startX = 0;
+      (GST_OMX_SCALER(self))->startY = 0;
+      (GST_OMX_SCALER(self))->cropWidth = 0;
+      (GST_OMX_SCALER(self))->cropHeight = 0;
+
+      return FALSE;
+    }
 }
 
 static void
@@ -193,7 +284,7 @@ omx_setup (GstOmxBaseFilter *omx_base)
     paramPort.format.video.eCompressionFormat = OMX_VIDEO_CodingUnused;
     paramPort.format.video.eColorFormat = OMX_COLOR_FormatYCbYCr;
     paramPort.nBufferSize =  self->out_stride * self->out_height;
-    paramPort.nBufferCountActual = 8;
+    paramPort.nBufferCountActual = 4;
     paramPort.nBufferAlignment = 0;
     paramPort.bBuffersContiguous = 0;
     G_OMX_PORT_SET_DEFINITION (omx_base->out_port, &paramPort);
@@ -213,6 +304,8 @@ omx_setup (GstOmxBaseFilter *omx_base)
     /* Set input channel resolution */
     GST_LOG_OBJECT (self, "Setting channel resolution (input)");
 
+    omx_parse_crop_params(self);
+
     _G_OMX_INIT_PARAM (&chResolution);
     chResolution.Frm0Width = self->in_width;
     chResolution.Frm0Height = self->in_height;
@@ -220,24 +313,11 @@ omx_setup (GstOmxBaseFilter *omx_base)
     chResolution.Frm1Width = 0;
     chResolution.Frm1Height = 0;
     chResolution.Frm1Pitch = 0;
-    
-	/* Added Cropping Support */
-	chResolution.FrmStartX = (GST_OMX_SCALER(self))->CropStartX;
-	chResolution.FrmStartY = (GST_OMX_SCALER(self))->CropStartY;
-	chResolution.FrmCropWidth = (GST_OMX_SCALER(self))->CropWidth;
-    chResolution.FrmCropHeight = (GST_OMX_SCALER(self))->CropHeight;
-
-	if((chResolution.FrmStartX + chResolution.FrmCropWidth) > self->in_width)
-	{
-		chResolution.FrmStartX = 0;
-	}
-
-	if((chResolution.FrmStartY + chResolution.FrmCropHeight) > self->in_height)
-	{
-		chResolution.FrmStartY = 0;
-	}
-
-	chResolution.eDir = OMX_DirInput;
+    chResolution.FrmStartX = (GST_OMX_SCALER(self))->startX;
+    chResolution.FrmStartY = (GST_OMX_SCALER(self))->startY;
+    chResolution.FrmCropWidth = (GST_OMX_SCALER(self))->cropWidth;
+    chResolution.FrmCropHeight = (GST_OMX_SCALER(self))->cropHeight;
+    chResolution.eDir = OMX_DirInput;
     chResolution.nChId = 0;
     err = OMX_SetConfig (gomx->omx_handle, OMX_TI_IndexConfigVidChResolution, &chResolution);
 
@@ -279,11 +359,10 @@ omx_setup (GstOmxBaseFilter *omx_base)
 enum
 {
     ARG_0,
-    ARG_CROP_START_X,
-	ARG_CROP_START_Y,
-	ARG_CROP_WIDTH,
-	ARG_CROP_HEIGHT,
+    ARG_CROP_AREA,
 };
+
+#define DEFAULT_CROP_AREA     NULL
 
 static void
 set_property (GObject *obj,
@@ -293,18 +372,10 @@ set_property (GObject *obj,
 {
     switch (prop_id)
     {
-        case ARG_CROP_START_X:
-            (GST_OMX_SCALER(obj))->CropStartX = g_value_get_uint (value);												
-            break;
-		case ARG_CROP_START_Y:
-            (GST_OMX_SCALER(obj))->CropStartY = g_value_get_uint (value);			
-			break;
-		case ARG_CROP_WIDTH:
-            (GST_OMX_SCALER(obj))->CropWidth = g_value_get_uint (value);			
-			break;
-		case ARG_CROP_HEIGHT:
-            (GST_OMX_SCALER(obj))->CropHeight = g_value_get_uint (value);			
-			break;
+        case ARG_CROP_AREA:
+	    (GST_OMX_SCALER(obj))->crop_area =
+	      g_ascii_strup(g_value_get_string(value), -1);
+	    break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (obj, prop_id, pspec);
             break;
@@ -319,25 +390,14 @@ get_property (GObject *obj,
 {
     switch (prop_id)
     {
-        case ARG_CROP_START_X:
-            g_value_set_uint (value, (GST_OMX_SCALER(obj))->CropStartX);			
-            break;
-		case ARG_CROP_START_Y:
-            g_value_set_uint (value, (GST_OMX_SCALER(obj))->CropStartY);			
-            break;
-		case ARG_CROP_WIDTH:
-            g_value_set_uint (value, (GST_OMX_SCALER(obj))->CropWidth);			
-            break;
-		case ARG_CROP_HEIGHT:
-            g_value_set_uint (value, (GST_OMX_SCALER(obj))->CropHeight);			
-            break;
-		
+        case ARG_CROP_AREA:
+	    g_value_set_string(value, (GST_OMX_SCALER(obj))->crop_area);
+	    break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (obj, prop_id, pspec);
             break;
     }
 }
-
 
 static void
 type_class_init (gpointer g_class,
@@ -349,27 +409,10 @@ type_class_init (gpointer g_class,
 	gobject_class->set_property = set_property;
 	gobject_class->get_property = get_property;
 
-	g_object_class_install_property (gobject_class, ARG_CROP_START_X,
-			g_param_spec_uint ("cropstartx", "Crop X coordinate",
-				"Crop start X coordinate",
-				0, 1920, 0, G_PARAM_READWRITE));
-
-	g_object_class_install_property (gobject_class, ARG_CROP_START_Y,
-			g_param_spec_uint ("cropstarty", "Crop Y coordinate",
-				"Crop start Y coordinate",
-				0, 1080, 0, G_PARAM_READWRITE));
-
-	g_object_class_install_property (gobject_class, ARG_CROP_WIDTH,
-			g_param_spec_uint ("cropwidth", "Crop Width",
-				"Crop Width ",
-				0, 1920, 0, G_PARAM_READWRITE));
-
-	g_object_class_install_property (gobject_class, ARG_CROP_HEIGHT,
-			g_param_spec_uint ("cropheight", "Crop Height",
-				"Crop Height ",
-				0, 1080, 0, G_PARAM_READWRITE));
-
-	
+	g_object_class_install_property (gobject_class, ARG_CROP_AREA,
+			g_param_spec_string ("crop-area", "Select the crop area.",
+			      "Selects the crop area using the format <startX>,<startY>@"
+			      "<cropWidth>x<cropHeight>", DEFAULT_CROP_AREA, G_PARAM_READWRITE));
 }
 
 static void
@@ -381,11 +424,7 @@ type_instance_init (GTypeInstance *instance,
     self = GST_OMX_BASE_VFPC (instance);
 
     self->omx_setup = omx_setup;
+    (GST_OMX_SCALER(instance))->crop_area = DEFAULT_CROP_AREA;
     g_object_set (self, "port-index", 0, NULL);
-	g_object_set (self, "cropstartx", 0, NULL);
-	g_object_set (self, "cropstarty", 0, NULL);
-	g_object_set (self, "cropwidth",  0, NULL);
-	g_object_set (self, "cropheight", 0, NULL);
-
 }
 

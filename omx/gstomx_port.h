@@ -32,35 +32,35 @@ G_BEGIN_DECLS
 
 typedef struct {
     GOmxPort *port;
-	gint refcnt;
-	GMutex *mutex;
+    gint refcnt;
+    GMutex mutex;
 } GstOmxPortPtr;
 
 static inline void gst_omxportptr_mutex_lock(GstOmxPortPtr *self) {
-	g_mutex_lock(self->mutex);
+	g_mutex_lock(&self->mutex);
 }
 
 static inline void gst_omxportptr_mutex_unlock(GstOmxPortPtr *self) {
-	g_mutex_unlock(self->mutex);
+	g_mutex_unlock(&self->mutex);
 }
 
 static inline GstOmxPortPtr *gst_omxportptr_ref(GstOmxPortPtr *self) {
-	g_mutex_lock(self->mutex);
+	g_mutex_lock(&self->mutex);
 	self->refcnt++;
-	g_mutex_unlock(self->mutex);
+	g_mutex_unlock(&self->mutex);
 	return self;
 }
 
 static inline void gst_omxportptr_unref(GstOmxPortPtr *self) {
-	g_mutex_lock(self->mutex);
+	g_mutex_lock(&self->mutex);
 	self->refcnt--;
 	if (0 == self->refcnt) {
-		g_mutex_unlock(self->mutex);
-		g_mutex_free(self->mutex);
+		g_mutex_unlock(&self->mutex);
+		g_mutex_clear(&self->mutex);
 		g_free(self);
 		return;
 	}
-	g_mutex_unlock(self->mutex);
+	g_mutex_unlock(&self->mutex);
 }
 
 static inline GstOmxPortPtr* gst_omxportptr_new(GOmxPort *port) {
@@ -68,8 +68,7 @@ static inline GstOmxPortPtr* gst_omxportptr_new(GOmxPort *port) {
 	if (p) {
 		p->refcnt = 1;
 		p->port = port;
-		p->mutex = g_mutex_new();
-		if (!p->mutex) { g_free(p); return NULL; }
+        g_mutex_init(&p->mutex);
 	}
 	return p;
 }
@@ -108,7 +107,7 @@ struct GOmxPort
     guint port_index;
     OMX_BUFFERHEADERTYPE **buffers;
 
-    GMutex *mutex;
+    GMutex mutex;
     gboolean enabled;
     gboolean omx_allocate; /**< Setup with OMX_AllocateBuffer rather than OMX_UseBuffer */
     AsyncQueue *queue;
@@ -135,7 +134,7 @@ struct GOmxPort
     /** if omx_allocate flag is not set then structure will contain upstream omx buffer pointer information */
     OmxBufferInfo *share_buffer_info;   
 
-	GCond *cond;
+	GCond cond;
 
 	GstOmxPortPtr *portptr;
 };

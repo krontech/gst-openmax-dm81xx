@@ -14,7 +14,7 @@ libgstomx_la_SOURCES = gstomx.c gstomx.h \
 		       gstomx_volume.c gstomx_volume.h \
 		       gstomx_mpeg4dec.c gstomx_mpeg4dec.h \
 		       gstomx_mpeg2dec.c gstomx_mpeg2dec.h \
- 		       gstomx_mjpegdec.c gstomx_mjpegdec.h \
+		       gstomx_mjpegdec.c gstomx_mjpegdec.h \
 		       gstomx_h263dec.c gstomx_h263dec.h \
 		       gstomx_h264dec.c gstomx_h264dec.h \
 		       gstomx_vc1dec.c gstomx_vc1dec.h \
@@ -58,11 +58,11 @@ libgstomx_la_SOURCES = gstomx.c gstomx.h \
                gstomx_scaler.c gstomx_scaler.h   \
                gstomx_deiscaler.c gstomx_deiscaler.h   \
                gstomx_noisefilter.c gstomx_noisefilter.h  \
-	       gstomx_videomixer.c gstomx_videomixer.h gstomx_videomixerpad.h
+               gstomx_videomixer.c gstomx_videomixer.h gstomx_videomixerpad.h
 
 libgstomx_la_LIBADD = $(OMX_LIBS) $(GST_LIBS) $(GST_BASE_LIBS) -lgstvideo-0.10 $(top_builddir)/util/libutil.la
 libgstomx_la_CFLAGS = -DUSE_OMXTICORE $(OMX_CFLAGS) $(OMXTIAUDIODEC_CFLAGS) $(USE_OMXTIAUDIODEC) $(GST_CFLAGS) $(GST_BASE_CFLAGS) -I$(top_srcdir)/util \
 	-Dxdc_target_name__=GCArmv5T -Dxdc_target_types__=gnu/targets/arm/std.h -Dxdc__RESTRICT__ 
 
-libgstomx_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) -pthread 
+libgstomx_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) -pthread
 

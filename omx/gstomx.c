@@ -55,7 +55,6 @@
 #include "gstomx_filereadersrc.h"
 #include "gstomx_volume.h"
 #include "gstomx_camera.h"
-#include "gstomx_rrparser.h"
 #include "swcsc.h"
 #include "gstperf.h"
 #include "gstomx_scaler.h"
@@ -128,7 +127,6 @@ static TableItem element_table[] =
     { "omx_noisefilter",         "libOMX_Core.so",   "OMX.TI.VPSSM3.VFPC.NF",     "",                   GST_RANK_PRIMARY,      gst_omx_noisefilter_get_type },
     { "omx_ctrl",         "libOMX_Core.so",   "OMX.TI.VPSSM3.CTRL.DC",     "",                   GST_RANK_NONE,      gst_omx_base_ctrl_get_type },
     { "omx_camera",         "libOMX_Core.so",           "OMX.TI.VPSSM3.VFCC",  NULL,                   GST_RANK_PRIMARY,   gst_omx_camera_get_type },
-    { "rr_h264parser",        NULL,                     NULL,                  NULL,               GST_RANK_PRIMARY,               gst_rrparser_get_type },
     { "omx_videomixer", 		"libOMX_Core.so",	"OMX.TI.VPSSM3.VFPC.INDTXSCWB", 	"", 				  GST_RANK_PRIMARY, 	 gst_omx_video_mixer_get_type },
     { NULL, NULL, NULL, NULL, 0, NULL },
 };

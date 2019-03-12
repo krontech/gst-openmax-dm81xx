@@ -204,7 +204,7 @@ change_state (GstElement *element,
     switch (transition)
     {
         case GST_STATE_CHANGE_PAUSED_TO_READY:
-            g_mutex_lock (self->ready_lock);
+            g_mutex_lock (&self->ready_lock);
             if (self->ready)
             {
                 /* unlock */
@@ -216,7 +216,7 @@ change_state (GstElement *element,
                 g_omx_core_unload (core);
                 self->ready = FALSE;
             }
-            g_mutex_unlock (self->ready_lock);
+            g_mutex_unlock (&self->ready_lock);
             if (core->omx_state != OMX_StateLoaded &&
                 core->omx_state != OMX_StateInvalid)
             {
@@ -258,7 +258,7 @@ finalize (GObject *obj)
     g_free (self->omx_component);
     g_free (self->omx_library);
 
-    g_mutex_free (self->ready_lock);
+    g_mutex_clear (&self->ready_lock);
 
     G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
@@ -593,7 +593,7 @@ pad_chain (GstPad *pad,
 
     if (G_UNLIKELY (gomx->omx_state == OMX_StateLoaded))
     {
-        g_mutex_lock (self->ready_lock);
+        g_mutex_lock (&self->ready_lock);
 
         GST_INFO_OBJECT (self, "omx: prepare");
         
@@ -616,7 +616,7 @@ pad_chain (GstPad *pad,
             	gst_pad_start_task (self->srcpad[i], output_loop, self->srcpad[i]);
         }
 
-        g_mutex_unlock (self->ready_lock);
+        g_mutex_unlock (&self->ready_lock);
 
         if (gomx->omx_state != OMX_StateIdle)
             goto out_flushing;
@@ -743,7 +743,7 @@ pad_event (GstPad *pad,
     switch (GST_EVENT_TYPE (event))
     {
         case GST_EVENT_EOS:
-            printf ("Recieved EOS event, press <CTRL+C> to terminate pipeline.\n");
+            /* printf ("Recieved EOS event, press <CTRL+C> to terminate pipeline.\n"); */
             /* if we are init'ed, and there is a running loop; then
              * if we get a buffer to inform it of EOS, let it handle the rest
              * in any other case, we send EOS */
@@ -962,7 +962,7 @@ type_instance_init (GTypeInstance *instance,
 		self->out_port[i]->omx_allocate = TRUE;
 		self->out_port[i]->share_buffer = FALSE;
 	}
-    self->ready_lock = g_mutex_new ();
+    g_mutex_init(&self->ready_lock);
 
     self->sinkpad =
         gst_pad_new_from_template (gst_element_class_get_pad_template (element_class, "sink"), "sink");

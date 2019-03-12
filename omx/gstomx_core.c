@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
-
 #include "gstomx_util.h"
 #include "gstomx.h"
 
@@ -33,7 +32,6 @@
 #endif
 
 #include <OMX_CoreExt.h>
-//#define DEBUG_ENABLED
 
 GST_DEBUG_CATEGORY_EXTERN (gstomx_util_debug);
 
@@ -84,17 +82,8 @@ static OMX_CALLBACKTYPE callbacks = { EventHandler, EmptyBufferDone, FillBufferD
 /*
  * Util
  */
-
 static void
-g_ptr_array_clear (GPtrArray *array)
-{
-    guint index;
-    for (index = 0; index < array->len; index++)
-        array->pdata[index] = NULL;
-}
-
-static void
-g_ptr_array_extend_insert (GPtrArray *array,
+g_ptr_array_insert_custom (GPtrArray *array,
                     guint index,
                     gpointer data)
 {
@@ -104,6 +93,14 @@ g_ptr_array_extend_insert (GPtrArray *array,
     }
 
     array->pdata[index] = data;
+}
+
+static void
+g_ptr_array_clear (GPtrArray *array)
+{
+    guint index;
+    for (index = 0; index < array->len; index++)
+        array->pdata[index] = NULL;
 }
 
 typedef void (*GOmxPortFunc) (GOmxPort *port);
@@ -120,8 +117,9 @@ core_for_each_port (GOmxCore *core,
 
         port = get_port (core, index);
 
-        if (port)
+        if (port) {
             func (port);
+        }
     }
 }
 
@@ -148,8 +146,8 @@ g_omx_core_new (gpointer object, gpointer klass)
 
     core->ports = g_ptr_array_new ();
 
-    core->omx_state_condition = g_cond_new ();
-    core->omx_state_mutex = g_mutex_new ();
+    g_cond_init(&core->omx_state_condition);
+    g_mutex_init(&core->omx_state_mutex);
 
     core->done_sem = g_sem_new ();
     core->flush_sem = g_sem_new ();
@@ -192,8 +190,8 @@ g_omx_core_free (GOmxCore *core)
     g_sem_free (core->flush_sem);
     g_sem_free (core->done_sem);
 
-    g_mutex_free (core->omx_state_mutex);
-    g_cond_free (core->omx_state_condition);
+    g_mutex_clear (&core->omx_state_mutex);
+    g_cond_clear (&core->omx_state_condition);
 
     g_ptr_array_free (core->ports, TRUE);
 
@@ -214,10 +212,8 @@ g_omx_core_init (GOmxCore *core)
         "library-name", &library_name,
         NULL);
 
-	
     GST_DEBUG_OBJECT (core->object, "loading: %s %s (%s)", component_name,
             component_role ? component_role : "", library_name);
-			
 
     g_return_if_fail (component_name);
     g_return_if_fail (library_name);
@@ -238,7 +234,6 @@ g_omx_core_init (GOmxCore *core)
                                                        &callbacks);
     #endif
 
-	
     GST_DEBUG_OBJECT (core->object, "OMX_GetHandle(&%p) -> %s",
         core->omx_handle, g_omx_error_to_str (core->omx_error));
 
@@ -269,7 +264,7 @@ g_omx_core_init (GOmxCore *core)
         core->omx_state = OMX_StateLoaded;
 }
 
-void 
+void
 g_omx_core_change_state (GOmxCore *core, OMX_STATETYPE state)
 {
     change_state (core, state);
@@ -291,9 +286,9 @@ g_omx_core_deinit (GOmxCore *core)
         if (core->omx_handle)
         {
             #ifdef USE_STATIC
-            core->omx_error = OMX_FreeHandle (core->omx_handle);
-            #else
             core->omx_error = core->imp->sym_table.free_handle (core->omx_handle);
+            #else
+            core->omx_error = OMX_FreeHandle (core->omx_handle);
             #endif
             GST_DEBUG_OBJECT (core->object, "OMX_FreeHandle(%p) -> %s",
                 core->omx_handle, g_omx_error_to_str (core->omx_error));
@@ -320,7 +315,6 @@ port_allocate_buffers (GOmxPort *port)
     if (port->enabled)
         g_omx_port_allocate_buffers (port);
 }
-
 
 void
 g_omx_core_prepare (GOmxCore *core)
@@ -411,12 +405,11 @@ g_omx_core_get_port (GOmxCore *core, const gchar *name, guint index)
     if (!port)
     {
         port = g_omx_port_new (core, name, index);
-        g_ptr_array_extend_insert (core->ports, index, port);
+        g_ptr_array_insert_custom (core->ports, index, port);
     }
 
     return port;
 }
-
 
 void
 g_omx_core_set_done (GOmxCore *core)
@@ -434,7 +427,6 @@ g_omx_core_wait_for_done (GOmxCore *core)
     GST_DEBUG_OBJECT (core->object, "end");
 }
 
-
 void
 g_omx_core_flush_start (GOmxCore *core)
 {
@@ -451,6 +443,7 @@ g_omx_core_flush_stop (GOmxCore *core)
     core_for_each_port (core, g_omx_port_resume);
     GST_DEBUG_OBJECT (core->object, "end");
 }
+
 /**
  * Accessor for OMX component handle.  If the OMX component is not constructed
  * yet, this will trigger it to be constructed (OMX_GetHandle()).  This should
@@ -482,16 +475,13 @@ static inline void
 complete_change_state (GOmxCore *core,
                        OMX_STATETYPE state)
 {
-    g_mutex_lock (core->omx_state_mutex);
+    g_mutex_lock (&core->omx_state_mutex);
 
     core->omx_state = state;
-    g_cond_signal (core->omx_state_condition);
-#ifdef DEBUG_ENABLED
-    //GST_DEBUG_OBJECT (core->object, "state=%d", state);
-	printf("OMX Core New state=%d\n", state);
-#endif
+    g_cond_signal (&core->omx_state_condition);
+    GST_DEBUG_OBJECT (core->object, "state=%d", state);
 
-    g_mutex_unlock (core->omx_state_mutex);
+    g_mutex_unlock (&core->omx_state_mutex);
 }
 
 static inline void
@@ -501,7 +491,7 @@ wait_for_state (GOmxCore *core,
     GTimeVal tv;
     gboolean signaled;
 
-    g_mutex_lock (core->omx_state_mutex);
+    g_mutex_lock (&core->omx_state_mutex);
 
     if (core->omx_error != OMX_ErrorNone)
         goto leave;
@@ -512,7 +502,7 @@ wait_for_state (GOmxCore *core,
     /* try once */
     if (core->omx_state != state)
     {
-        signaled = g_cond_timed_wait (core->omx_state_condition, core->omx_state_mutex, &tv);
+        signaled = g_cond_timed_wait (&core->omx_state_condition, &core->omx_state_mutex, &tv);
 
         if (!signaled)
         {
@@ -530,7 +520,7 @@ wait_for_state (GOmxCore *core,
     }
 
 leave:
-    g_mutex_unlock (core->omx_state_mutex);
+    g_mutex_unlock (&core->omx_state_mutex);
 }
 
 /*
@@ -615,11 +605,9 @@ EventHandler (OMX_HANDLETYPE omx_handle,
             {
                 OMX_COMMANDTYPE cmd;
 
-                cmd = (OMX_COMMANDTYPE) data_1;                
-#ifdef DEBUG_ENABLED
-				//GST_DEBUG_OBJECT (core->object, "OMX_EventCmdComplete: %d", cmd);
-				printf("OMX_EventCmdComplete: %d\n", cmd);
-#endif
+                cmd = (OMX_COMMANDTYPE) data_1;
+
+                GST_DEBUG_OBJECT (core->object, "OMX_EventCmdComplete: %d", cmd);
 
                 switch (cmd)
                 {
@@ -639,10 +627,7 @@ EventHandler (OMX_HANDLETYPE omx_handle,
             }
         case OMX_EventBufferFlag:
             {
-#ifdef DEBUG_ENABLED
-                //GST_DEBUG_OBJECT (core->object, "OMX_EventBufferFlag");
-				printf ("OMX_EventBufferFlag\n");
-#endif
+                GST_DEBUG_OBJECT (core->object, "OMX_EventBufferFlag");
                 if (data_2 & OMX_BUFFERFLAG_EOS)
                 {
                     g_omx_core_set_done (core);
@@ -651,10 +636,7 @@ EventHandler (OMX_HANDLETYPE omx_handle,
             }
         case OMX_EventPortSettingsChanged:
             {
-#ifdef DEBUG_ENABLED
-                //GST_DEBUG_OBJECT (core->object, "OMX_EventPortSettingsChanged");
-				printf("OMX_EventPortSettingsChanged\n");
-#endif
+                GST_DEBUG_OBJECT (core->object, "OMX_EventPortSettingsChanged");
                 /** @todo only on the relevant port. */
                 if (core->settings_changed_cb)
                 {
@@ -664,10 +646,8 @@ EventHandler (OMX_HANDLETYPE omx_handle,
             }
         case OMX_EventIndexSettingChanged:
             {
-#ifdef DEBUG_ENABLED
-                //GST_DEBUG_OBJECT (core->object,"OMX_EventIndexSettingsChanged");
-				printf("OMX_EventIndexSettingsChanged\n");
-#endif
+                GST_DEBUG_OBJECT (core->object,
+                        "OMX_EventIndexSettingsChanged");
                 if (core->index_settings_changed_cb)
                 {
                     core->index_settings_changed_cb (core, data_1, data_2);
@@ -676,7 +656,8 @@ EventHandler (OMX_HANDLETYPE omx_handle,
             }
         case OMX_EventError:
             {
-                printf("OMX_EventError: 0x%lx\n",data_1);
+                GST_ERROR_OBJECT (core->object, "OMX_EventError: %s (0x%lx)",
+                                  g_omx_error_to_str (data_1), data_1);
 				if (data_1 != 0x8000100b) {
 					printf("unrecoverable error: %s (0x%lx)\n",
 							g_omx_error_to_str (data_1), data_1);
@@ -685,9 +666,9 @@ EventHandler (OMX_HANDLETYPE omx_handle,
 					/* component might leave us waiting for buffers, unblock */
 					g_omx_core_flush_start (core);
 					/* unlock wait_for_state */
-					g_mutex_lock (core->omx_state_mutex);
-					g_cond_signal (core->omx_state_condition);
-					g_mutex_unlock (core->omx_state_mutex);
+					g_mutex_lock (&core->omx_state_mutex);
+					g_cond_signal (&core->omx_state_condition);
+					g_mutex_unlock (&core->omx_state_mutex);
 				} else {
 					printf("Stream is corrupt error, ignorable ... \n");
 					fflush(stdout);
@@ -699,16 +680,13 @@ EventHandler (OMX_HANDLETYPE omx_handle,
             {
                 OMX_BUFFERHEADERTYPE *omx_buffer = (OMX_BUFFERHEADERTYPE *)data_1;
                 GOmxPort *port = get_port (core, omx_buffer->nOutputPortIndex);
-#ifdef DEBUG_ENABLED
-                /*GST_DEBUG_OBJECT (core->object, "unref: omx_buffer=%p, pAppPrivate=%p, pBuffer=%p",
-                        omx_buffer, omx_buffer->pAppPrivate, omx_buffer->pBuffer);*/
-				printf("unref: omx_buffer=%p, pAppPrivate=%p, pBuffer=%p\n",
-                        omx_buffer, omx_buffer->pAppPrivate, omx_buffer->pBuffer);
-#endif
 
-                g_mutex_lock (core->omx_state_mutex);
+                GST_DEBUG_OBJECT (core->object, "unref: omx_buffer=%p, pAppPrivate=%p, pBuffer=%p",
+                        omx_buffer, omx_buffer->pAppPrivate, omx_buffer->pBuffer);
+
+                g_mutex_lock (&core->omx_state_mutex);
                 omx_buffer->nFlags |= GST_BUFFERFLAG_UNREF_CHECK;
-                g_mutex_unlock (core->omx_state_mutex);
+                g_mutex_unlock (&core->omx_state_mutex);
 
                 g_omx_port_push_buffer (port, omx_buffer);
                 break;
@@ -734,13 +712,9 @@ EmptyBufferDone (OMX_HANDLETYPE omx_handle,
 
     core = (GOmxCore*) app_data;
     port = get_port (core, omx_buffer->nInputPortIndex);
-#ifdef DEBUG_ENABLED
-	/* GST_DEBUG_OBJECT (core->object, "EBD: omx_buffer=%p, pAppPrivate=%p, pBuffer=%p",
-            omx_buffer, omx_buffer->pAppPrivate, omx_buffer->pBuffer);		*/
 
-	 printf("EBD: omx_buffer=%p, pAppPrivate=%p, pBuffer=%p\n",
-            omx_buffer, omx_buffer->pAppPrivate, omx_buffer->pBuffer);		
-#endif
+    GST_DEBUG_OBJECT (core->object, "EBD: omx_buffer=%p, pAppPrivate=%p, pBuffer=%p",
+            omx_buffer, omx_buffer->pAppPrivate, omx_buffer->pBuffer);
 
     g_omx_core_got_buffer (core, port, omx_buffer);
 
@@ -759,12 +733,9 @@ FillBufferDone (OMX_HANDLETYPE omx_handle,
 
     core = (GOmxCore *) app_data;
     port = get_port (core, omx_buffer->nOutputPortIndex);
-#ifdef DEBUG_ENABLED
-	 /*GST_DEBUG_OBJECT (core->object, "FBD: omx_buffer=%p, pAppPrivate=%p, pBuffer=%p",
-            omx_buffer, omx_buffer->pAppPrivate, omx_buffer->pBuffer);			*/
-	 printf("FBD: omx_buffer=%p, pAppPrivate=%p, pBuffer=%p\n",
-            omx_buffer, omx_buffer->pAppPrivate, omx_buffer->pBuffer);			
-#endif
+
+    GST_DEBUG_OBJECT (core->object, "FBD: omx_buffer=%p, pAppPrivate=%p, pBuffer=%p",
+            omx_buffer, omx_buffer->pAppPrivate, omx_buffer->pBuffer);
 
     g_omx_core_got_buffer (core, port, omx_buffer);
 

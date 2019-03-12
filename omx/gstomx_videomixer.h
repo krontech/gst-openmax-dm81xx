@@ -82,7 +82,7 @@ struct GstOmxVideoMixer
     char *omx_component;
     char *omx_library;
     gboolean ready;
-    GMutex *ready_lock;
+    GMutex ready_lock;
 
     GstFlowReturn last_pad_push_return;
     GstBuffer *codec_data;
@@ -108,7 +108,7 @@ struct GstOmxVideoMixer
 	
 	guint settingsChanged;
 	Olist **orderList;
-	GMutex *loop_lock;
+	GMutex loop_lock;
 	guint next_sinkpad;
 	guint numpads;
 	guint outbufsize;

@@ -112,15 +112,17 @@ initialize_port (GstOmxBaseFilter *omx_base)
     GST_DEBUG_OBJECT (self, "nFrameWidth = %ld, nFrameHeight = %ld, nBufferCountActual = %ld",
 		paramPort.format.video.nFrameWidth, paramPort.format.video.nFrameHeight, 
 		paramPort.nBufferCountActual);
-	
+
     GST_DEBUG_OBJECT (self, "G_OMX_PORT_SET_DEFINITION (output)");
     G_OMX_PORT_SET_DEFINITION (omx_base->out_port, &paramPort);
+
 #if 0
 	G_OMX_PORT_GET_DEFINITION (omx_base->in_port, &paramPort);
     //paramPort.nBufferCountActual = 8;
 	//  paramPort.format.video.xFramerate = (30) << 16;
     G_OMX_PORT_SET_DEFINITION (omx_base->in_port, &paramPort);
 #endif
+
 #if 0
     port = g_omx_core_get_port (gomx, "input", 0);
 	

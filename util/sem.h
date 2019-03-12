@@ -28,8 +28,8 @@ typedef struct GSem GSem;
 
 struct GSem
 {
-    GCond *condition;
-    GMutex *mutex;
+    GCond condition;
+    GMutex mutex;
     gint counter;
 };
 

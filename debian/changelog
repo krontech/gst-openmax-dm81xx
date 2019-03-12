@@ -1,3 +1,10 @@
+gst-openmax-dm81xx (0.7.0+chronos3) unstable; urgency=medium
+
+  * Merge scaler crop support and bug fixes from RidgeRun repository.
+  * Fix deprecation warnings with g_mutex and g_cond.
+
+ -- Owen Kirby <oskirby@gmail.com>  Mon, 11 Mar 2019 17:34:24 -0700
+
 gst-openmax-dm81xx (0.7.0+chronos2) unstable; urgency=medium
 
   * Fix build against glib2.0 version 2.40 and newer. 

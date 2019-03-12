@@ -42,8 +42,8 @@ struct GOmxCore
     OMX_ERRORTYPE omx_error;
 
     OMX_STATETYPE omx_state;
-    GCond *omx_state_condition;
-    GMutex *omx_state_mutex;
+    GCond omx_state_condition;
+    GMutex omx_state_mutex;
 
     GPtrArray *ports;
 

@@ -61,7 +61,7 @@ struct GstOmxBaseFilter
     char *omx_component;
     char *omx_library;
     gboolean ready;
-    GMutex *ready_lock;
+    GMutex ready_lock;
 
     GstOmxBaseFilterCb omx_setup;
     GstOmxBaseFilterPushCb push_cb;

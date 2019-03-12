@@ -703,4 +703,3 @@ type_instance_init (GTypeInstance * instance, gpointer g_class)
   g_omx_port_disable (self->port);
 
 }
-

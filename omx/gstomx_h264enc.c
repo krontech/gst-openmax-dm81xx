@@ -124,8 +124,8 @@ gst_omx_video_enocdepreset_get_type ()
         	{OMX_Video_Enc_High_Quality,                 "High Quality",         "hq"},
         	{OMX_Video_Enc_User_Defined,                 "User Defined",         "user"},
         	{OMX_Video_Enc_High_Speed_Med_Quality,       "High Speed Med Qual",  "hsmq"},
-        	{OMX_Video_Enc_Med_Speed_Med_Quality,        "Med Speed Med Qaul",   "msmq"},
-        	{OMX_Video_Enc_Med_Speed_High_Quality,       "Med Speed High Qaul",  "mshq"},
+        	{OMX_Video_Enc_Med_Speed_Med_Quality,        "Med Speed Med Qual",   "msmq"},
+        	{OMX_Video_Enc_Med_Speed_High_Quality,       "Med Speed High Qual",  "mshq"},
         	{OMX_Video_Enc_High_Speed,                   "High Speed",           "hs"},
             {0, NULL, NULL },
         };
@@ -214,6 +214,7 @@ set_property (GObject *obj,
     GstOmxH264Enc *self;
 
     omx_base = GST_OMX_BASE_FILTER (obj);
+
     self = GST_OMX_H264ENC (obj);
 
     switch (prop_id)
@@ -371,6 +372,7 @@ get_property (GObject *obj,
               GParamSpec *pspec)
 {
     GstOmxH264Enc *self;
+
     GstOmxBaseFilter *omx_base;
 
     omx_base = GST_OMX_BASE_FILTER (obj);
@@ -572,7 +574,7 @@ omx_h264_push_cb (GstOmxBaseFilter *omx_base, GstBuffer *buf)
 
     /* Currently we use this logic to handle IDR period since the latest
      * EZSDK version doesn't have support for OMX_IndexConfigVideoAVCIntraPeriod
-	 */
+     */
     if ((self->idr_period > 0) || (self->force_idr))
     {
         if ((self->cont == self->idr_period) || (self->force_idr))
@@ -637,34 +639,34 @@ omx_setup (GstOmxBaseFilter *omx_base)
         }
     }
 
-	{
-		OMX_VIDEO_PARAM_AVCTYPE tAVCParams;
+    {
+      OMX_VIDEO_PARAM_AVCTYPE tAVCParams;
 
-		_G_OMX_INIT_PARAM (&tAVCParams);
+      _G_OMX_INIT_PARAM (&tAVCParams);
 
-		tAVCParams.nPortIndex = OMX_DirOutput;
-		OMX_GetParameter(gomx->omx_handle, OMX_IndexParamVideoAvc, &tAVCParams);
+      tAVCParams.nPortIndex = OMX_DirOutput;
+      OMX_GetParameter(gomx->omx_handle, OMX_IndexParamVideoAvc, &tAVCParams);
 
-		tAVCParams.eLevel = h264enc->level;
-		tAVCParams.eProfile = h264enc->profile;
-		tAVCParams.nPFrames = h264enc->i_period - 1;
-		tAVCParams.nBFrames = 0;
+      tAVCParams.eLevel = h264enc->level;
+      tAVCParams.eProfile = h264enc->profile;
+      tAVCParams.nPFrames = h264enc->i_period - 1;
+      tAVCParams.nBFrames = 0;
 
-		OMX_SetParameter(gomx->omx_handle, OMX_IndexParamVideoAvc, &tAVCParams);
-	}
+      OMX_SetParameter(gomx->omx_handle, OMX_IndexParamVideoAvc, &tAVCParams);
+    }
 
     {
-		OMX_VIDEO_PARAM_ENCODER_PRESETTYPE tEncoderPreset;
+      OMX_VIDEO_PARAM_ENCODER_PRESETTYPE tEncoderPreset;
 
-		_G_OMX_INIT_PARAM(&tEncoderPreset);
-		tEncoderPreset.nPortIndex = omx_base->out_port->port_index;
+      _G_OMX_INIT_PARAM(&tEncoderPreset);
+      tEncoderPreset.nPortIndex = omx_base->out_port->port_index;
 
-		OMX_GetParameter(gomx->omx_handle, OMX_TI_IndexParamVideoEncoderPreset, &tEncoderPreset);
+      OMX_GetParameter(gomx->omx_handle, OMX_TI_IndexParamVideoEncoderPreset, &tEncoderPreset);
 
-		tEncoderPreset.eEncodingModePreset = h264enc->encodingPreset;
-		tEncoderPreset.eRateControlPreset  = h264enc->ratecontrolPreset;
+      tEncoderPreset.eEncodingModePreset = h264enc->encodingPreset;
+      tEncoderPreset.eRateControlPreset  = h264enc->ratecontrolPreset;
 
-		OMX_SetParameter(gomx->omx_handle, OMX_TI_IndexParamVideoEncoderPreset,	&tEncoderPreset);
+      OMX_SetParameter(gomx->omx_handle, OMX_TI_IndexParamVideoEncoderPreset, &tEncoderPreset);
     }
 
     GST_INFO_OBJECT (omx_base, "end");

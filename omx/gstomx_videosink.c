@@ -261,7 +261,7 @@ omx_setup (GstBaseSink *gst_sink, GstCaps *caps)
     param.nBufferSize = (width * height * 2);
     param.format.video.nFrameWidth = width;
     param.format.video.nFrameHeight = height;
-	param.format.video.nStride    = width * 2;
+    param.format.video.nStride    = width * 2;
     param.format.video.eCompressionFormat = OMX_VIDEO_CodingUnused;
     param.format.video.eColorFormat = OMX_COLOR_FormatYCbYCr;
     param.nBufferCountActual = 5;
@@ -291,9 +291,7 @@ omx_setup (GstBaseSink *gst_sink, GstCaps *caps)
       customModeInfo.vBackPorch = LCD_V_BACK_PORCH;
       customModeInfo.vSyncLen = LCD_V_SYNC_LENGTH;
 
-      OMX_SetParameter(gomx->omx_handle,
-              (OMX_INDEXTYPE)OMX_TI_IndexParamVFDCCustomModeInfo,
-              &customModeInfo);
+      OMX_SetParameter(gomx->omx_handle, (OMX_INDEXTYPE)OMX_TI_IndexParamVFDCCustomModeInfo, &customModeInfo);
 #endif
     } else {
       /* get the display mode set via property */
@@ -307,8 +305,8 @@ omx_setup (GstBaseSink *gst_sink, GstCaps *caps)
     /* center the video */
     if (!sink->left && !sink->top)
     {
-        sink->left = ((maxWidth - width) / 2) & ~1;         
-        sink->top = ((maxHeight - height) / 2) & ~1;
+      sink->left = ((maxWidth - width) / 2) & ~1;         
+      sink->top = ((maxHeight - height) / 2) & ~1;
     }
 
     /* set mosiac window information */
@@ -326,8 +324,7 @@ omx_setup (GstBaseSink *gst_sink, GstCaps *caps)
     mosaicLayout.nDisChannelNum = 0;
     mosaicLayout.nNumWindows = 1;
 
-    OMX_SetParameter (gomx->omx_handle, (OMX_INDEXTYPE) OMX_TI_IndexParamVFDCCreateMosaicLayout, 
-        &mosaicLayout);
+    OMX_SetParameter (gomx->omx_handle, (OMX_INDEXTYPE) OMX_TI_IndexParamVFDCCreateMosaicLayout, &mosaicLayout);
 
     /* set port to window mapping */
     _G_OMX_INIT_PARAM (&port2Winmap);
@@ -341,14 +338,14 @@ omx_setup (GstBaseSink *gst_sink, GstCaps *caps)
     _G_OMX_INIT_PARAM (&memTypeCfg);
     memTypeCfg.nPortIndex = 0;
     memTypeCfg.eBufMemoryType = OMX_BUFFER_MEMORY_DEFAULT;
-    
+
     OMX_SetParameter (gomx->omx_handle, OMX_TI_IndexParamBuffMemType, &memTypeCfg);
 
-	_G_OMX_INIT_PARAM (&fieldMergeInfo);
+    _G_OMX_INIT_PARAM (&fieldMergeInfo);
     fieldMergeInfo.fieldMergeMode = FALSE;
-    
+
     OMX_SetParameter (gomx->omx_handle, (OMX_INDEXTYPE)OMX_TI_IndexParamVFDCFieldMergeMode, &fieldMergeInfo);
- 
+
     /* enable the input port */
     OMX_SendCommand (gomx->omx_handle, OMX_CommandPortEnable, omx_base->in_port->port_index, NULL);
     g_sem_down (omx_base->in_port->core->port_sem);

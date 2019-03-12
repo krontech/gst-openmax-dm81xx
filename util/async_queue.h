@@ -28,8 +28,8 @@ typedef struct AsyncQueue AsyncQueue;
 
 struct AsyncQueue
 {
-    GMutex *mutex;
-    GCond *condition;
+    GMutex mutex;
+    GCond condition;
     GList *head;
     GList *tail;
     guint length;

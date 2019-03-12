@@ -175,7 +175,7 @@ change_state (GstElement *element,
     switch (transition)
     {
         case GST_STATE_CHANGE_PAUSED_TO_READY:
-            g_mutex_lock (self->ready_lock);
+            g_mutex_lock (&self->ready_lock);
             if (self->ready)
             {
                 /* unlock */
@@ -186,7 +186,7 @@ change_state (GstElement *element,
                 g_omx_core_unload (core);
                 self->ready = FALSE;
             }
-            g_mutex_unlock (self->ready_lock);
+            g_mutex_unlock (&self->ready_lock);
             if (core->omx_state != OMX_StateLoaded &&
                 core->omx_state != OMX_StateInvalid)
             {
@@ -228,7 +228,7 @@ finalize (GObject *obj)
     g_free (self->omx_component);
     g_free (self->omx_library);
 
-    g_mutex_free (self->ready_lock);
+    g_mutex_clear (&self->ready_lock);
 
     G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
@@ -568,9 +568,8 @@ pad_chain (GstPad *pad,
     GstOmxBaseFilter *self;
     GstFlowReturn ret = GST_FLOW_OK;
 
-    self = GST_OMX_BASE_FILTER (GST_OBJECT_PARENT (pad));	
+    self = GST_OMX_BASE_FILTER (GST_OBJECT_PARENT (pad));
 
-    //printf("INput!!\n");
     PRINT_BUFFER (self, buf);
     if(self->isFlushed == TRUE)
 	  if(self->filterType == FILTER_DECODER) {
@@ -589,7 +588,7 @@ pad_chain (GstPad *pad,
 
     if (G_UNLIKELY (gomx->omx_state == OMX_StateLoaded))
     {
-        g_mutex_lock (self->ready_lock);
+        g_mutex_lock (&self->ready_lock);
 
         GST_INFO_OBJECT (self, "omx: prepare");
         
@@ -611,7 +610,7 @@ pad_chain (GstPad *pad,
             gst_pad_start_task (self->srcpad, output_loop, self->srcpad);
         }
 
-        g_mutex_unlock (self->ready_lock);
+        g_mutex_unlock (&self->ready_lock);
 
         if (gomx->omx_state != OMX_StateIdle)
             goto out_flushing;
@@ -705,7 +704,7 @@ out_flushing:
 
         if (error_msg)
         {
-            GST_ELEMENT_ERROR (self, STREAM, FAILED, (NULL), (error_msg));
+	    GST_ELEMENT_ERROR (self, STREAM, FAILED, (NULL), (error_msg));
             ret = GST_FLOW_ERROR;
         }
 
@@ -731,7 +730,7 @@ pad_event (GstPad *pad,
     switch (GST_EVENT_TYPE (event))
     {
         case GST_EVENT_EOS:
-            printf ("Recieved EOS event, press <CTRL+C> to terminate pipeline.\n");
+            /* printf ("Recieved EOS event, press <CTRL+C> to terminate pipeline.\n"); */
             /* if we are init'ed, and there is a running loop; then
              * if we get a buffer to inform it of EOS, let it handle the rest
              * in any other case, we send EOS */
@@ -874,7 +873,7 @@ buffer_alloc (GOmxPort *port, gint len)
         }
         else
         {
-            //GST_LOG_OBJECT (self, "caps already fixed: %" GST_PTR_FORMAT, caps);
+            GST_LOG_OBJECT (self, "caps already fixed: %" GST_PTR_FORMAT, caps);
             gst_caps_unref (caps);
         }
     }
@@ -916,7 +915,7 @@ type_instance_init (GTypeInstance *instance,
     self->in_port->share_buffer = FALSE;
     self->out_port->share_buffer = FALSE;
 
-    self->ready_lock = g_mutex_new ();
+    g_mutex_init(&self->ready_lock);
 
     self->sinkpad =
         gst_pad_new_from_template (gst_element_class_get_pad_template (element_class, "sink"), "sink");

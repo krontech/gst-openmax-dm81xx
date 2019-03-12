@@ -84,4 +84,3 @@ GType gst_omx_camera_get_type (void);
 G_END_DECLS
 
 #endif /* GSTOMX_CAMERA_H */
-

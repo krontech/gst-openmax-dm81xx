@@ -37,10 +37,11 @@ typedef struct GstOmxScalerClass GstOmxScalerClass;
 struct GstOmxScaler
 {
     GstOmxBaseVfpc omx_base;
-	gint CropStartX;
-	gint CropStartY;
-	gint CropWidth;
-	gint CropHeight;
+    gchar *crop_area;
+    guint startX;
+    guint startY;
+    guint cropWidth;
+    guint cropHeight;
 };
 
 struct GstOmxScalerClass
