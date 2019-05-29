@@ -3,6 +3,8 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+.PHONY: override_dh_strip
+
 # debian package version
 version=$(shell dpkg-parsechangelog | grep ^Version: | cut -d ' ' -f 2)
 # upstream version
@@ -19,7 +21,11 @@ override_dh_autoreconf:
 
 override_dh_auto_configure:
 	dh_auto_configure -- --disable-silent-rules --disable-builtin-libvpx \
-		--enable-gtk-doc --with-html-dir=\$${prefix}/share/doc/$(gst_pkgname)
+		--enable-gtk-doc --with-html-dir=\$${prefix}/share/doc/$(gst_pkgname) \
+		--enable-debug --enable-DEBUG
+
+override_dh_strip:
+	dh_strip --dbg-package=gstreamer0.10-openmax-dm81xx-dbg
 
 override_dh_installchangelogs:
 	dh_installchangelogs ChangeLog OMX_GST_ReleaseNotes.pdf

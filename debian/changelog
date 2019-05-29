@@ -1,3 +1,9 @@
+gst-openmax-dm81xx (0.7.0+chronos4) unstable; urgency=medium
+
+  * Add packages for debugging symbols.
+
+ -- Owen Kirby <oskirby@gmail.com>  Tue, 28 May 2019 18:48:58 -0700
+
 gst-openmax-dm81xx (0.7.0+chronos3) unstable; urgency=medium
 
   * Merge scaler crop support and bug fixes from RidgeRun repository.

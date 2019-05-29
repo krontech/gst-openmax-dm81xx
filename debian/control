@@ -17,3 +17,21 @@ Description: GStreamer OpenMAX Plugins (dm81xx)
  GStreamer OpenMAX is a GStreamer plug-in that allows communication with
  OpenMAX IL components for the TI Davinci DM81xx family of multimedia
  SoCs.
+
+Package: gstreamer0.10-openmax-dm81xx-dbg
+Architecture: armel
+Multi-Arch: same
+Section: debug
+Priority: extra
+Depends: gstreamer0.10-openmax-dm81xx  (= ${binary:Version}),
+         ${misc:Depends}
+Description: GStreamer OpenMAX Plugins (dm81xx)
+ GStreamer OpenMAX is a GStreamer plug-in that allows communication with
+ OpenMAX IL components for the TI Davinci DM81xx family of multimedia
+ SoCs.
+ .
+ This package contains unstripped shared libraries. It is provided primarily
+ to provide a backtrace with names in a debugger, this makes it somewhat
+ easier to interpret core dumps. The libraries are installed in
+ /usr/lib/debug and are automatically used by gdb.
+
