@@ -1,3 +1,10 @@
+gst-openmax-dm81xx (0.7.0+chronos5) unstable; urgency=medium
+
+  * Fix incorrect signal waiting in g_cond.
+  * Fix memory leak in teardown of omx_videosink.
+
+ -- Owen Kirby <oskirby@gmail.com>  Mon, 22 Jul 2019 22:08:15 -0700
+
 gst-openmax-dm81xx (0.7.0+chronos4) unstable; urgency=medium
 
   * Add packages for debugging symbols.

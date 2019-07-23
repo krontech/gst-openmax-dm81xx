@@ -499,14 +499,13 @@ wait_for_state (GOmxCore *core,
     g_get_current_time (&tv);
     g_time_val_add (&tv, 100000000);
 
-    /* try once */
-    if (core->omx_state != state)
+    while (core->omx_state != state)
     {
         signaled = g_cond_timed_wait (&core->omx_state_condition, &core->omx_state_mutex, &tv);
-
         if (!signaled)
         {
             GST_ERROR_OBJECT (core->object, "timed out");
+            break;
         }
     }
 

@@ -157,8 +157,8 @@ change_state (GstElement *element,
 
         case GST_STATE_CHANGE_READY_TO_NULL:
             g_omx_core_unload (self->gomx);
+            g_omx_core_deinit (self->gomx);
             break;
-
         default:
             break;
     }
